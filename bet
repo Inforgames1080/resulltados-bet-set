@@ -1,0 +1,110 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import re
+
+# ---------------------------
+# Texto original das apostas
+# ---------------------------
+dados = """
+Futebol	Atalanta vs Club Brugge / Correct Score	30/09/2025 13:45:00	30/09/2025 15:36:52	R$40,22
+Futebol	Corinthians vs Flamengo / Correct Score	28/09/2025 20:30:00	28/09/2025 22:29:29	R$20,14
+Futebol	Esporte Clube Bahia vs Palmeiras / Correct Score	28/09/2025 16:02:00	28/09/2025 18:03:28	R$18,94
+Futebol	1. FC Union Berlin vs Hamburger SV / Correct Score	28/09/2025 14:30:00	28/09/2025 16:31:31	R$12,11
+Futebol	1. FC Köln vs VfB Stuttgart / Correct Score	28/09/2025 12:30:00	28/09/2025 14:28:12	R$11,11
+Futebol	Vasco da Gama vs Cruzeiro / Correct Score	27/09/2025 18:30:00	27/09/2025 20:28:24	-R$84,21
+Futebol	1. FC Heidenheim vs FC Augsburg / Correct Score	27/09/2025 10:30:00	27/09/2025 12:29:28	-R$4,12
+Futebol	SC Paderborn 07 vs 1. FC Kaiserslautern / Correct Score	27/09/2025 08:00:00	27/09/2025 09:59:28	R$75,40
+Futebol	FC Schalke 04 vs SpVgg Greuther Fürth / Correct Score	26/09/2025 13:30:00	26/09/2025 15:29:33	R$29,36
+Futebol	FC Red Bull Salzburg vs FC Porto / Correct Score	25/09/2025 16:00:00	25/09/2025 17:52:23	R$46,80
+Futebol	Lille OSC vs Brann / Correct Score	25/09/2025 13:45:00	25/09/2025 15:36:30	R$57,30
+Futebol	Randers FC vs FC Nordsjælland / Correct Score	22/09/2025 14:00:00	22/09/2025 15:53:18	R$42,85
+Futebol	Eintracht Frankfurt vs 1. FC Union Berlin / Correct Score	21/09/2025 10:30:00	21/09/2025 12:31:38	R$57,19
+Futebol	Holstein Kiel vs Karlsruher SC / Correct Score	21/09/2025 08:30:00	21/09/2025 10:25:03	R$57,56
+Futebol	VfB Stuttgart vs FC St. Pauli / Correct Score	19/09/2025 15:30:00	19/09/2025 17:25:10	R$83,51
+Futebol	1. FC Kaiserslautern vs Preußen Münster / Correct Score	19/09/2025 13:30:00	19/09/2025 15:29:06	R$81,85
+Futebol	Eintracht Frankfurt vs Galatasaray SK / Correct Score	18/09/2025 16:00:00	18/09/2025 17:57:04	R$77,74
+Futebol	FC København vs Bayer 04 Leverkusen / Correct Score	18/09/2025 13:45:00	18/09/2025 15:38:03	R$93,19
+Futebol	River Plate vs Palmeiras / Correct Score	17/09/2025 21:30:00	17/09/2025 23:26:10	R$24,70
+Futebol	FC Bayern München vs Chelsea / Correct Score	17/09/2025 16:00:00	17/09/2025 17:56:00	R$59,14
+Futebol	SK Slavia Praha vs Bodø/Glimt / Correct Score	17/09/2025 13:45:00	17/09/2025 15:48:00	R$61,09
+Futebol	Juventus vs Borussia Dortmund / Correct Score	16/09/2025 16:00:00	16/09/2025 17:54:26	R$61,37
+Futebol	Athletic Bilbao vs Arsenal / Correct Score	16/09/2025 13:45:00	16/09/2025 15:42:25	R$51,20
+Futebol	Esporte Clube Bahia vs Cruzeiro / Correct Score	15/09/2025 20:00:00	15/09/2025 21:59:26	R$53,00
+Futebol	CSKA 1948 vs Slavia Sofia / Correct Score	15/09/2025 12:00:00	15/09/2025 13:50:25	R$33,31
+Futebol	FC St. Pauli vs FC Augsburg / Correct Score	14/09/2025 10:30:00	14/09/2025 12:27:47	R$23,88
+Futebol	SpVgg Greuther Fürth vs 1. FC Kaiserslautern / Correct Score	14/09/2025 08:30:00	14/09/2025 10:26:30	R$42,22
+Futebol	FC Schalke 04 vs Holstein Kiel / Correct Score	13/09/2025 08:00:00	13/09/2025 09:57:21	R$35,81
+Futebol	Bayer 04 Leverkusen vs Eintracht Frankfurt / Correct Score	12/09/2025 15:30:00	12/09/2025 17:30:26	R$32,16
+Futebol	SC Paderborn 07 vs VfL Bochum / Correct Score	12/09/2025 13:30:00	12/09/2025 15:27:06	R$26,67
+Futebol	Vissel Kobe vs Kashiwa Reysol / Correct Score	12/09/2025 07:00:00	12/09/2025 09:03:38	R$28,94
+Futebol	Bolivia vs Brazil / Correct Score	09/09/2025 20:35:00	09/09/2025 22:32:50	-R$150,01
+Futebol	Serbia vs England / Correct Score	09/09/2025 15:45:00	09/09/2025 17:38:30	-R$1,29
+Futebol	América-MG vs Operário Ferroviário / Correct Score	07/09/2025 18:30:00	07/09/2025 20:23:09	-R$190,98
+Futebol	Criciúma EC vs Chapecoense / Correct Score	07/09/2025 16:01:00	07/09/2025 18:05:39	R$21,71
+Futebol	Shelbourne FC vs Galway United / Correct Score	07/09/2025 13:02:00	07/09/2025 14:58:57	R$21,07
+Futebol	Ukraine vs France / Correct Score	05/09/2025 15:45:00	05/09/2025 17:35:33	R$62,83
+Futebol	Australia vs New Zealand / Correct Score	05/09/2025 06:45:00	05/09/2025 08:42:43	-R$198,00
+Futebol	Argentina vs Venezuela / Correct Score	04/09/2025 20:36:00	04/09/2025 22:29:50	R$47,75
+Futebol	FC Halifax Town vs Woking / Correct Score	03/09/2025 15:44:00	03/09/2025 17:44:32	-R$150,02
+Futebol	Yokohama FC vs Vissel Kobe / Correct Score	03/09/2025 07:03:00	03/09/2025 08:59:47	R$10,37
+Futebol	América-MG vs Avaí FC / Correct Score	02/09/2025 19:30:00	02/09/2025 21:23:24	R$78,04
+Futebol	Swindon Town vs Reading / Correct Score	02/09/2025 15:00:00	02/09/2025 16:55:38	R$52,90
+Futebol	Bucaspor vs Izmir Coruhlu / Correct Score	02/09/2025 13:00:00	02/09/2025 14:59:15	R$47,00
+Futebol	Si̇ncan Beledi̇yesi̇ Ankaraspor vs Eskisehirspor / Correct Score	02/09/2025 10:01:00	02/09/2025 11:57:36	R$39,87
+Futebol	Tigres FC Zipaquira vs Cúcuta Deportivo / Correct Score	01/09/2025 16:59:00	01/09/2025 18:53:43	R$44,51
+Futebol	FC Farul Constanta vs Petrolul Ploiesti / Correct Score	01/09/2025 15:01:00	01/09/2025 17:00:33	R$39,68
+"""
+
+# ---------------------------
+# Organizar dados
+# ---------------------------
+linhas = [l for l in dados.strip().split("\n") if l.strip() != ""]
+jogos, datas, valores = [], [], []
+
+for linha in linhas:
+    partes = linha.split("\t")
+    if len(partes) >= 5:
+        jogo = partes[1]
+        data = partes[2].split()[0]
+        valor = partes[4]
+        valor_num = float(re.sub(r"[R\$\s]", "", valor).replace(",", "."))
+        jogos.append(jogo)
+        datas.append(pd.to_datetime(data, format="%d/%m/%Y"))
+        valores.append(valor_num)
+
+df = pd.DataFrame({"data": datas, "jogo": jogos, "lucro": valores})
+df.sort_values("data", inplace=True)
+
+print(df.head())
+
+# ---------------------------
+# Estatísticas básicas
+# ---------------------------
+print("\nResumo:")
+print(df["lucro"].describe())
+print(f"\nLucro total: R${df['lucro'].sum():.2f}")
+
+# ---------------------------
+# Gráfico de lucro ao longo do tempo
+# ---------------------------
+plt.figure(figsize=(10,5))
+plt.plot(df["data"], df["lucro"].cumsum(), marker="o", linewidth=2)
+plt.title("Evolução do Lucro/Prejuízo nas Apostas")
+plt.xlabel("Data")
+plt.ylabel("Lucro acumulado (R$)")
+plt.grid(True)
+plt.show()
+
+# ---------------------------
+# Gráfico de barras - top ganhos/perdas
+# ---------------------------
+top_ganhos = df.sort_values("lucro", ascending=False).head(10)
+top_perdas = df.sort_values("lucro").head(10)
+
+fig, ax = plt.subplots(1,2, figsize=(14,5))
+ax[0].barh(top_ganhos["jogo"], top_ganhos["lucro"], color="green")
+ax[0].set_title("Top 10 maiores ganhos")
+ax[1].barh(top_perdas["jogo"], top_perdas["lucro"], color="red")
+ax[1].set_title("Top 10 maiores perdas")
+plt.tight_layout()
+plt.show()
